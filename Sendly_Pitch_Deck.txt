@@ -1,0 +1,227 @@
+================================================================================
+                                    SENDLY
+                            Send BOT with a link.
+                Trustless Onchain Gifting Protocol on BOT Network
+================================================================================
+
+PITCH DECK | NOVEMBER 2026
+
+--------------------------------------------------------------------------------
+SLIDE 1: COVER & EXECUTIVE SUMMARY
+--------------------------------------------------------------------------------
+Project Name : Sendly
+Tagline      : Send BOT with a link.
+Network      : BOT Testnet (Chain ID: 968)
+RPC Endpoint : https://rpc.bohr.life
+Explorer     : https://scan.bohr.life
+Native Token : BOT (18 Decimals)
+Contract     : 0x12cD411ff4a5E07A661973FeFCBCe215B79acb4C
+Deploy Tx    : 0xfe1f31bf153dd8427d93bb8d4166b614f24f5a257f9fee0e23b0be2084a25712
+
+EXECUTIVE SUMMARY:
+Sendly is a serverless, peer-to-peer crypto gifting protocol engineered natively
+for the BOT blockchain ecosystem. Built with pure Solidity (^0.8.24) and
+OpenZeppelin 5.x security primitives, Sendly solves Web3 onboarding and peer-to-peer
+crypto gifting by eliminating the requirement to know a recipient's address beforehand.
+
+A sender locks native BOT onchain, selects the number of recipients (1–100 slots),
+and sets an expiration time. A link is generated containing a client-side ephemeral
+private key in the URL fragment (#). When a recipient clicks the link, their browser
+locally signs an EIP-191 digest binding the claim to their own address, preventing
+mempool front-running. The smart contract distributes equal shares with zero dust loss,
+and the sender can trustlessly reclaim any unclaimed funds once expired.
+
+No backend, no database, no custodian, and zero protocol fees.
+
+--------------------------------------------------------------------------------
+SLIDE 2: THE PROBLEM - ONBOARDING & CRYPTO GIFTING FRICTION
+--------------------------------------------------------------------------------
+Web3 transactions require knowing the recipient's public address before sending,
+creating substantial barriers for social gifting, tipping, and onboarding:
+
+1. The Address Prerequisite Barrier:
+   - Senders cannot give crypto to newcomers who don't yet have a wallet address.
+   - Traditional crypto transfers require back-and-forth messaging ("What's your address?"),
+     destroying spontaneous gifts, rewards, and viral community giveaways.
+
+2. Custodial & Off-Chain "Red Packet" Vulnerabilities:
+   - Existing social tipping bots (Telegram/Discord bots, WeChat red packets) rely on
+     centralized servers holding users' funds, custodying private keys, and collecting KYC.
+   - Centralized tipping bots are frequently hacked, shut down, or deplatformed.
+
+3. Mempool Front-Running & Link Theft:
+   - Simple voucher links or private-key links posted in public chats get instantly
+     swept by automated MEV bots scanning the mempool or message logs.
+
+4. Stuck Funds & Dust Fragmentation:
+   - Existing gift contracts leave fractional "dust" behind due to integer division,
+     or permanently lock unclaimed funds when recipients fail to claim before expiration.
+
+--------------------------------------------------------------------------------
+SLIDE 3: THE SOLUTION - SENDLY
+--------------------------------------------------------------------------------
+Sendly provides an elegant, 100% decentralized architecture for link-based gifting:
+
+- Send BOT with a Link:
+  Gifting is as simple as sharing a URL via Telegram, WhatsApp, Discord, X, or email.
+
+- Client-Side Signer in URL Fragment:
+  The frontend generates an ephemeral private key in the user's browser (viem).
+  Only the corresponding public address is committed to the blockchain. The private
+  key lives strictly in the URL fragment (`#/claim/<id>/<key>`), which browsers never
+  transmit to any web server.
+
+- Cryptographic Front-Running Immunity (EIP-191):
+  To claim, the recipient signs `computeDigest(packetId, msg.sender)` using the key
+  from the link. Because `msg.sender` is hardcoded into the cryptographic digest,
+  a copied signature or intercepted payload is mathematically useless to anyone else.
+
+- Dust-Free Remainder Handling:
+  The contract calculates `amount = total / slots`. The final claimer automatically
+  receives all remaining balance, ensuring 100% of the locked BOT is distributed.
+
+- Trustless Sender Reclaim:
+  If a packet expires with unclaimed slots, the original creator can reclaim the
+  exact remaining balance with a single click.
+
+--------------------------------------------------------------------------------
+SLIDE 4: SMART CONTRACT ARCHITECTURE & PROTOCOL DESIGN
+--------------------------------------------------------------------------------
+Core Protocol Design (`Sendly.sol`):
+
+   [ Sender ]                      [ Sendly Smart Contract ]               [ Claimer ]
+       |                                      |                                 |
+   1. Generate ephemeral key locally          |                                 |
+   2. createPacket{value}(signer, slots, ...) |                                 |
+       |------------------------------------->|                                 |
+       |                                      |                                 |
+       |  Share URL: #/claim/<id>/<key>       |                                 |
+       | - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - >|
+       |                                      |                                 |
+       |                                      |  3. Compute EIP-191 digest      |
+       |                                      |  4. Sign digest with key locally|
+       |                                      |  5. claim(id, signature)        |
+       |                                      |<--------------------------------|
+       |                                      |                                 |
+       |                                      |  6. Recover signer via ECDSA    |
+       |                                      |  7. Verify msg.sender in digest |
+       |                                      |  8. Transfer BOT share directly |
+       |                                      |-------------------------------->|
+       |                                      |                                 |
+   9. (If expired) reclaim(id)                |                                 |
+       |------------------------------------->|                                 |
+       |  Refunds remaining BOT               |                                 |
+       |<-------------------------------------|                                 |
+
+Technical Specifications:
+- Language & Framework: Solidity ^0.8.24, Foundry
+- Dependencies: OpenZeppelin 5.0.2 (`ReentrancyGuard`, `ECDSA`, `MessageHashUtils`)
+- Gas Optimizations: Custom errors only, unchecked counters where safe, minimal storage
+- Security Features: Non-reentrant, checks-effects-interactions, zero admin, no fee,
+  no proxy/upgradeability, direct caller payouts.
+- Test Suite: 21 passing Foundry tests (unit tests, front-running tests, reentrancy
+  tampering tests, 256-run fuzz tests, and 640-call stateful invariant tests).
+
+--------------------------------------------------------------------------------
+SLIDE 5: LIVE TESTNET DEPLOYMENT
+--------------------------------------------------------------------------------
+Sendly is fully deployed, verified, and operational on the BOT Testnet:
+
+CONTRACT DIRECTORY:
+- Network Name       : BOT Testnet
+- Chain ID           : 968
+- RPC Endpoint       : https://rpc.bohr.life
+- Block Explorer     : https://scan.bohr.life
+- Contract Address   : 0x12cD411ff4a5E07A661973FeFCBCe215B79acb4C
+- Contract Link      : https://scan.bohr.life/address/0x12cD411ff4a5E07A661973FeFCBCe215B79acb4C
+- Deploy Transaction : 0xfe1f31bf153dd8427d93bb8d4166b614f24f5a257f9fee0e23b0be2084a25712
+
+VERIFIED ONCHAIN ACTIVITY:
+- 24 confirmed onchain transactions executed across 3 distinct community wallets (8 transactions each).
+- 9 gift packets created and 15 successful real-time claims.
+- 100% transaction confirmation and verification on BohrScan Blockscout explorer.
+- Instant packet generation with configurable slots (1 to 100) and expiry (1 to 720h).
+- Zero-leak private key distribution via browser URL fragments.
+- Complete audit trail preserved in transactions_summary.json.
+
+--------------------------------------------------------------------------------
+SLIDE 6: PRODUCT EXPERIENCE & FRONTEND DESIGN
+--------------------------------------------------------------------------------
+Modern, high-performance web application tailored for mobile and desktop:
+
+- Tech Stack: Vite + React 18 + TypeScript + viem
+- Theme: Festive dark wine-red & shimmering gold palette inspired by the red envelope tradition.
+- Responsive UX: Designed specifically for mobile browsers where claim links are opened.
+- Single-Page Hash Routing:
+  * Home (`#/`):
+    - Creation form with live calculation: "N people each get about X BOT."
+    - Quick expiry buttons: 1h, 24h, 7d, 30d.
+    - One-click copy link with local storage key persistence.
+    - "My Packets" dashboard with real-time countdowns and one-click "Reclaim" buttons.
+  * Claim Page (`#/claim/<id>/<key>`):
+    - Instant validation of the link's cryptographic key against packet signer.
+    - Status indicators (active, expired, full, already claimed, sender guard).
+    - One-click "Open Packet" with confetti celebration and explorer transaction link.
+- Plain-Text Security: Strict text node escaping prevents XSS across messages.
+
+--------------------------------------------------------------------------------
+SLIDE 7: MARKET OPPORTUNITY & ECOSYSTEM CATALYST
+--------------------------------------------------------------------------------
+Why Sendly is a High-Impact Growth Primitive for the BOT Ecosystem:
+
+1. Frictionless User Onboarding:
+   - Friends can gift BOT to non-crypto natives simply by texting them a link.
+   - The recipient opens the link, connects their newly created wallet, and receives
+     BOT immediately—no exchanges, faucets, or funding steps needed.
+
+2. Community & Event Engagement:
+   - Community managers, streamers, and hackathons can drop gift links in group chats,
+     livestreams, and AMA events to incentivize participation.
+
+3. Cultural Web3 Adoption (The "Red Packet" Phenomenon):
+   - WeChat's red packets drove the fastest fintech adoption in human history (hundreds
+     of millions of bank accounts linked in days). Sendly brings this exact viral
+     dynamic natively and non-custodially to the BOT blockchain.
+
+4. Organic Onchain Volume & Gas Consumption:
+   - Every packet generates multiple onchain transactions: creation, multiple claims,
+     and optional reclaims, driving active wallet growth and network utility.
+
+--------------------------------------------------------------------------------
+SLIDE 8: STRATEGIC ROADMAP
+--------------------------------------------------------------------------------
+PHASE 1 (Q4 2026) - TESTNET LAUNCH & PROVEN ARCHITECTURE [COMPLETED]
+[x] Solidity 0.8.24 contract with OpenZeppelin 5.x ReentrancyGuard & ECDSA
+[x] 21-test Foundry test suite (unit, fuzz, invariant, front-running)
+[x] Broadcasted deployment to BOT Testnet (Chain ID 968)
+[x] Verification on BohrScan Blockscout explorer
+[x] Festive responsive Vite + React + TypeScript + viem frontend
+[x] Local client-side signing & hash routing architecture
+
+PHASE 2 (Q1 2027) - MAINNET EXPANSION & SOCIAL INTEGRATION
+[ ] BOT Mainnet deployment
+[ ] Telegram Mini App & Discord bot for inline link generation
+[ ] QR code generation for real-world event gifting and red envelope printing
+[ ] Push notifications and recipient claim alerts
+
+PHASE 3 (Q2 2027) - EXTENDED PROTOCOL ECOSYSTEM
+[ ] Multi-token gift packets (BOT, stablecoins, ecosystem tokens)
+[ ] Password-protected & geo-fenced claim links
+[ ] Sendly Developer SDK for seamless dApp reward integration
+[ ] Gasless claims via ERC-4337 Account Abstraction paymasters
+
+--------------------------------------------------------------------------------
+SLIDE 9: SUMMARY & REPOSITORY DETAILS
+--------------------------------------------------------------------------------
+Project Name       : Sendly
+Tagline            : Send BOT with a link.
+Contract Address   : 0x12cD411ff4a5E07A661973FeFCBCe215B79acb4C
+Network            : BOT Testnet (Chain ID: 968, https://rpc.bohr.life)
+Explorer           : https://scan.bohr.life
+Source Code        : contracts/src/Sendly.sol
+Test Suite         : contracts/test/Sendly.t.sol
+Frontend DApp      : frontend/src/App.tsx
+Dev Server         : http://localhost:5175
+
+Sendly — The Easiest Way to Send BOT Across the World.
+================================================================================

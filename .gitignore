@@ -1,0 +1,21 @@
+# Node
+node_modules/
+dist/
+
+# Foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+
+# Secrets / Passwords / Env
+.env
+*.env
+*.secret
+*password*
+*.key
+!frontend/src/contracts/
+
+# System / IDE
+.DS_Store
+.vscode/
+.idea/
