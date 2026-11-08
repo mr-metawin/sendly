@@ -103,3 +103,8 @@ Build for production:
 ```bash
 npm run build
 ```
+
+Deploy to Cloudflare (Workers / Pages via Wrangler):
+```bash
+npx wrangler deploy
+```
